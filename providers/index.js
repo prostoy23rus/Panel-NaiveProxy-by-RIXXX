@@ -28,17 +28,39 @@ class ProvidersManager {
         );
     }
 
+    if (options.domain) {
+      results.links = {
+        hysteria2:
+          this.providers.hysteria2.generateLink(
+            username,
+            password,
+            options.domain
+          )
+      };
+    }
+
     return results;
   }
 
-  async deleteUser(username) {
+  async deleteUser(
+  username,
+  enabledProviders = {}
+) {
     const results = {};
 
-    results.telemt =
-      await this.providers.telemt.deleteUser(username);
+    if (enabledProviders.telemt) {
+  results.telemt =
+    await this.providers.telemt.deleteUser(
+      username
+    );
+}
 
-    results.hysteria2 =
-      this.providers.hysteria2.deleteUser(username);
+if (enabledProviders.hysteria2) {
+  results.hysteria2 =
+    this.providers.hysteria2.deleteUser(
+      username
+    );
+}
 
     return results;
   }

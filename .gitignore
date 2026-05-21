@@ -2,3 +2,5 @@ panel/node_modules/
 panel/data/
 *.log
 .DS_Store
+node_modules/
+package-lock.json

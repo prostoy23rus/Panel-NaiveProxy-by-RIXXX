@@ -1,0 +1,25 @@
+{
+  "name": "panel-naiveproxy-by-rixxx",
+  "version": "1.0.0",
+  "description": "> Веб-панель управления для быстрой установки и управления NaiveProxy на VPS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prostoy23rus/Panel-NaiveProxy-by-RIXXX.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/prostoy23rus/Panel-NaiveProxy-by-RIXXX/issues"
+  },
+  "homepage": "https://github.com/prostoy23rus/Panel-NaiveProxy-by-RIXXX#readme",
+  "dependencies": {
+    "axios": "^1.16.1",
+    "js-yaml": "^4.1.1"
+  }
+}

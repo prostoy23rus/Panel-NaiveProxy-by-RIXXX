@@ -24,6 +24,11 @@ chmod +x install.sh
 
 bash install.sh
 
+if [[ -f configs/providers.json ]]; then
+  sed -i 's/"telemt": false/"telemt": true/' \
+    configs/providers.json
+fi
+
 echo ""
 echo "Telemt installation completed"
 echo ""

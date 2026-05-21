@@ -34,8 +34,11 @@ tls:
   key: /etc/hysteria/server.key
 
 auth:
-  type: password
-  password: changeme123
+  type: userpass
+
+userpass:
+  users:
+    admin: admin123
 
 masquerade:
   type: proxy
@@ -46,6 +49,11 @@ EOF
 
 systemctl enable hysteria-server
 systemctl restart hysteria-server
+
+if [[ -f configs/providers.json ]]; then
+  sed -i 's/"hysteria2": false/"hysteria2": true/' \
+    configs/providers.json
+fi
 
 echo ""
 echo "Hysteria2 installation completed"
