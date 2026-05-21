@@ -985,3 +985,35 @@ body {
   .data-table th, .data-table td { padding: 8px 10px; }
   .td-link { max-width: 120px; }
 }
+.provider-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 14px;
+  margin-bottom: 10px;
+
+  border-radius: 12px;
+
+  background: rgba(255,255,255,0.03);
+
+  font-weight: 500;
+}
+
+.provider-dot {
+  width: 10px;
+  height: 10px;
+
+  border-radius: 50%;
+}
+
+.provider-enabled {
+  background: #22c55e;
+
+  box-shadow:
+    0 0 10px #22c55e;
+}
+
+.provider-disabled {
+  background: #64748b;
+}

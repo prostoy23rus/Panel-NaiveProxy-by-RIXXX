@@ -1,5 +1,8 @@
 const express = require('express');
 const ProvidersManager = require('../../providers');
+const {
+  loadProviders
+} = require("./utils/providers");
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
@@ -121,9 +124,29 @@ app.get('/api/me', requireAuth, (req, res) => {
 // ─────────────────────────────────────────────
 app.get('/api/config', requireAuth, (req, res) => {
   const config = loadConfig();
+
   // Don't send passwords
   const safe = { ...config };
+
   res.json(safe);
+});
+app.get('/api/providers', requireAuth, (req, res) => {
+  try {
+    const providersConfig =
+      loadProviders();
+
+    res.json({
+      success: true,
+      providers: providersConfig
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.json({
+      success: false,
+      providers: {}
+    });
+  }
 });
 
 app.post('/api/config/change-password', requireAuth, (req, res) => {
@@ -159,44 +182,88 @@ app.get('/api/proxy-users', requireAuth, (req, res) => {
 app.post('/api/proxy-users/add', requireAuth, async (req, res) => {
   const { username, password } = req.body;
 
-if (!username || !password) {
-  return res.json({ success: false, message: 'Логин и пароль обязательны' });
-}
+  if (!username || !password) {
+    return res.json({
+      success: false,
+      message: 'Логин и пароль обязательны'
+    });
+  }
 
   const config = loadConfig();
-  if (!config.proxyUsers) config.proxyUsers = [];
-  
+
+  if (!config.proxyUsers) {
+    config.proxyUsers = [];
+  }
+
   // Check duplicate
   if (config.proxyUsers.find(u => u.username === username)) {
-    return res.json({ success: false, message: 'Пользователь уже существует' });
+    return res.json({
+      success: false,
+      message: 'Пользователь уже существует'
+    });
   }
-  
-try {
-  await providers.createUser(username, password, {
-    telemt: true,
-    hysteria2: true
-  });
-} catch (err) {
-  console.error(err);
 
-  return res.json({
-    success: false,
-    message: 'Ошибка создания пользователя'
+  let providerResults;
+
+  try {
+const enabledProviders =
+  loadProviders();
+
+providerResults =
+  await providers.createUser(
+    username,
+    password,
+    {
+      telemt:
+        enabledProviders.telemt,
+
+      hysteria2:
+        enabledProviders.hysteria2,
+
+      domain: config.domain
+    }
+  );
+  } catch (err) {
+    console.error(err);
+
+    return res.json({
+      success: false,
+      message: 'Ошибка создания пользователя'
+    });
+  }
+
+  config.proxyUsers.push({
+    username,
+    password,
+    createdAt: new Date().toISOString()
   });
-}
-  config.proxyUsers.push({ username, password, createdAt: new Date().toISOString() });
+
   saveConfig(config);
-  
+
   // If installed, update Caddyfile
   if (config.installed) {
     updateCaddyfile(config, res, () => {
-      res.json({ success: true, link: `naive+https://${username}:${password}@${config.domain}:443` });
+      res.json({
+        success: true,
+        links: {
+          naive:
+            `naive+https://${username}:${password}@${config.domain}:443`,
+          hysteria2:
+            providerResults?.links?.hysteria2 || null
+        }
+      });
     });
   } else {
-    res.json({ success: true, link: username + ':' + password });
+    res.json({
+      success: true,
+      links: {
+        naive: username + ':' + password,
+        hysteria2:
+          providerResults?.links?.hysteria2 || null
+      }
+    });
   }
 });
-
 app.delete('/api/proxy-users/:username', requireAuth, async (req, res) => {
   const { username } = req.params;
   const config = loadConfig();
@@ -206,7 +273,13 @@ app.delete('/api/proxy-users/:username', requireAuth, async (req, res) => {
     return res.json({ success: false, message: 'Пользователь не найден' });
   }
 try {
-  await providers.deleteUser(username);
+const enabledProviders =
+  loadProviders();
+
+await providers.deleteUser(
+  username,
+  enabledProviders
+);
 } catch (err) {
   console.error(err);
 

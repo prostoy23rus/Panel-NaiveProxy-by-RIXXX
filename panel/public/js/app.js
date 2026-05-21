@@ -10,6 +10,7 @@ let ws = null;
 let installRunning = false;
 let deleteUserTarget = null;
 let currentConfig = null;
+let currentProviders = {};
 
 // ─── INIT ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -139,13 +140,47 @@ async function loadDashboard() {
   const serviceBtns = document.getElementById('serviceBtns');
   const quickLinksEmpty = document.getElementById('quickLinksEmpty');
   const quickLinksList = document.getElementById('quickLinksList');
+  const providersList = document.getElementById('providersList');
 
   statusEl.innerHTML = '<span class="dot dot-gray"></span> Загрузка...';
 
   try {
-    const res = await fetch('/api/status');
-    const data = await res.json();
-    currentConfig = data;
+    const [statusRes, providersRes] =
+  await Promise.all([
+    fetch('/api/status'),
+    fetch('/api/providers')
+  ]);
+
+const data =
+  await statusRes.json();
+
+const providersData =
+  await providersRes.json();
+
+currentConfig = data;
+currentProviders =
+  providersData.providers || {};
+providersList.innerHTML = '';
+
+Object.entries(currentProviders)
+  .forEach(([name, enabled]) => {
+
+    const statusClass =
+  enabled
+    ? 'provider-enabled'
+    : 'provider-disabled';
+
+providersList.innerHTML += `
+  <div class="provider-item">
+    <div class="
+      provider-dot
+      ${statusClass}
+    "></div>
+
+    <span>${name}</span>
+  </div>
+`;
+  });
 
     if (!data.installed) {
       statusEl.innerHTML = '<span class="dot dot-gray"></span> Не установлен';
