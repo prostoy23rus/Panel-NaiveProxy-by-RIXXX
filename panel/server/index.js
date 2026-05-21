@@ -1,4 +1,5 @@
 const express = require('express');
+const ProvidersManager = require('../../providers');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
@@ -10,6 +11,15 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
+const providers = new ProvidersManager({
+  telemt: {
+    apiUrl: "http://127.0.0.1:8081",
+    token: ""
+  },
+  hysteria2: {
+    configPath: "/etc/hysteria/config.yaml"
+  }
+});
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
@@ -146,11 +156,13 @@ app.get('/api/proxy-users', requireAuth, (req, res) => {
   res.json({ users: config.proxyUsers || [] });
 });
 
-app.post('/api/proxy-users/add', requireAuth, (req, res) => {
+app.post('/api/proxy-users/add', requireAuth, async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
-    return res.json({ success: false, message: 'Логин и пароль обязательны' });
-  }
+
+if (!username || !password) {
+  return res.json({ success: false, message: 'Логин и пароль обязательны' });
+}
+
   const config = loadConfig();
   if (!config.proxyUsers) config.proxyUsers = [];
   
@@ -159,6 +171,19 @@ app.post('/api/proxy-users/add', requireAuth, (req, res) => {
     return res.json({ success: false, message: 'Пользователь уже существует' });
   }
   
+try {
+  await providers.createUser(username, password, {
+    telemt: true,
+    hysteria2: true
+  });
+} catch (err) {
+  console.error(err);
+
+  return res.json({
+    success: false,
+    message: 'Ошибка создания пользователя'
+  });
+}
   config.proxyUsers.push({ username, password, createdAt: new Date().toISOString() });
   saveConfig(config);
   
@@ -172,7 +197,7 @@ app.post('/api/proxy-users/add', requireAuth, (req, res) => {
   }
 });
 
-app.delete('/api/proxy-users/:username', requireAuth, (req, res) => {
+app.delete('/api/proxy-users/:username', requireAuth, async (req, res) => {
   const { username } = req.params;
   const config = loadConfig();
   const before = (config.proxyUsers || []).length;
@@ -180,6 +205,16 @@ app.delete('/api/proxy-users/:username', requireAuth, (req, res) => {
   if (config.proxyUsers.length === before) {
     return res.json({ success: false, message: 'Пользователь не найден' });
   }
+try {
+  await providers.deleteUser(username);
+} catch (err) {
+  console.error(err);
+
+  return res.json({
+    success: false,
+    message: 'Ошибка удаления пользователя'
+  });
+}
   saveConfig(config);
   
   if (config.installed) {
